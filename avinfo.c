@@ -33,17 +33,17 @@ const char *fourcc(FOURCC tag)
 	static unsigned char buf[5];
 	int i;
 
-	buf[0] = tag & 255;
-	buf[1] = (tag >> 8) & 255;
-	buf[2] = (tag >> 16) & 255;
-	buf[3] = (tag >> 24) & 255;
+	buf[0] = (unsigned char) tag & 255;
+	buf[1] = (unsigned char) (tag >> 8) & 255;
+	buf[2] = (unsigned char) (tag >> 16) & 255;
+	buf[3] = (unsigned char) (tag >> 24) & 255;
 	buf[4] = 0;
 
 	for (i = 0; i < 4; i++)
 		if (buf[i] < 32 || buf[i] > 127)
 			buf[i] = '?';
 
-	return buf;
+	return (const char*) buf;
 }
 
 #ifdef WIN32
@@ -111,6 +111,9 @@ int main(int argc, char **argv)
 	double fps = 0;
 	int width = 0, height = 0, i;
 	char buf[1024], fourcc_vids[5];
+#ifdef WIN32
+	char filename2[4096];
+#endif
 	const char *_vids = "Unknown codec", *_auds = "Unknown codec";
 	const char *filename = NULL;
 
@@ -128,12 +131,22 @@ int main(int argc, char **argv)
 
 	if (!filename)
 		exit(0);
+
+	if (filename[0] == '"') {
+		strncpy(filename2, filename + 1, sizeof(filename2) - 1);
+		filename2[sizeof(filename2) - 1] = 0;
+
+		if (filename2[strlen(filename2) - 1] == '"')
+			filename2[strlen(filename2) - 1] = 0;
+
+		filename = filename2;
+	}
 #endif
 
 	f = fopen(filename, "rb");
 
 	if (!f)
-		error("Unable to open file");
+		error(filename);//"Unable to open file");
 
 	tag = get32(f);
 	size = get32(f);
@@ -169,7 +182,7 @@ int main(int argc, char **argv)
 			width = avih.dwWidth;
 			height = avih.dwHeight;
 
-			fseek(f, -sizeof(avih), SEEK_CUR);
+			fseek(f, -(signed) sizeof(avih), SEEK_CUR);
 		}
 
 		if (tag == MKTAG('s','t','r','h')) {
@@ -182,7 +195,7 @@ int main(int argc, char **argv)
 				fps = (double) strh.dwRate / (double) strh.dwScale;
 			}
 
-			fseek(f, -sizeof(strh), SEEK_CUR);
+			fseek(f, -(signed) sizeof(strh), SEEK_CUR);
 		}
 
 		if (tag == MKTAG('s','t','r','f')) {
@@ -195,7 +208,7 @@ int main(int argc, char **argv)
 				ch = wave.nChannels;
 				auds = wave.wFormatTag;
 				
-				fseek(f, -sizeof(wave), SEEK_CUR);
+				fseek(f, -(signed) sizeof(wave), SEEK_CUR);
 			}
 			
 			if (type == MKTAG('v','i','d','s') && !vids) {
@@ -205,7 +218,7 @@ int main(int argc, char **argv)
 
 				vids = bm.biCompression;
 				
-				fseek(f, -sizeof(bm), SEEK_CUR);
+				fseek(f, -(signed) sizeof(bm), SEEK_CUR);
 			}
 		}
 
@@ -219,7 +232,11 @@ int main(int argc, char **argv)
 	strcpy(fourcc_vids, fourcc(vids));
 
 	for (i = 0; video_formats[i].tag; i++)
+#ifdef WIN32
+		if (!_strnicmp(video_formats[i].tag, fourcc_vids, 4))
+#else
 		if (!strcasecmp(video_formats[i].tag, fourcc_vids))
+#endif
 			_vids = video_formats[i].descr;
 
 	if (hz || ch || auds)

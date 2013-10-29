@@ -1,0 +1,5 @@
+#include <windows.h>
+#include "resources.h"
+
+ICON_ID ICON "avinfo.ico"
+

@@ -1,7 +1,13 @@
 
-AVInfo 0.9
+AVInfo 0.9.1
 (C) Copyright 2004 Wojtek Kaniewski <wojtekka@toxygen.net>
 http://toxygen.net/avinfo/
 
-No docs, sorry. Compile and run. 
+No docs, no bonus. Compile and run.
+
+
+Revision history
+----------------
+0.9.1 - Win32 fixes by Maciej Sachaj <maciek@nsol.eu.org>
+0.9 - initial release
 
